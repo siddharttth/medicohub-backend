@@ -1,0 +1,26 @@
+{
+  "name": "medicohub-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "db:init": "node src/scripts/initDB.js",
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github-personal:siddharttth/medicohub-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "mongoose": "^9.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
