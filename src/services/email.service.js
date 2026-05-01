@@ -69,3 +69,20 @@ exports.sendNoteRequest = async (user, noteRequest) => {
      <p>If you can help, please upload on MedicoHub!</p>`
   );
 };
+
+exports.sendDailyReminder = async (user) => {
+  await send(
+    user.email,
+    `Don't break your ${user.streakDays}-day streak! 🔥`,
+    `<h2>Keep your streak alive!</h2>
+     <p>Hi ${user.name},</p>
+     <p>You have a <strong>${user.streakDays}-day streak</strong> going. Don't let it end today!</p>
+     <p>Log in to MedicoHub, complete a topic, or join the drops to keep it going.</p>
+     <a href="${process.env.FRONTEND_URL}" style="background:#4F46E5;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">
+       Study Now
+     </a>
+     <p style="margin-top:16px;font-size:12px;color:#888;">
+       To turn off reminders, update your notification settings in the app.
+     </p>`
+  );
+};

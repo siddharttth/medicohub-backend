@@ -5,6 +5,6 @@ const upload = require('../middleware/upload');
 const { generalLimiter } = require('../middleware/rateLimiter');
 
 router.post('/upload', authenticate, generalLimiter, upload.single('file'), ctrl.uploadFile);
-router.delete('/', authenticate, ctrl.deleteFile);
+router.delete('/:publicId', authenticate, ctrl.deleteFile);
 
 module.exports = router;

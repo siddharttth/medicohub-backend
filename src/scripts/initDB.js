@@ -16,6 +16,7 @@ require('../models/Notification');
 require('../models/SearchHistory');
 require('../models/AuditLog');
 require('../models/NoteRequest');
+require('../models/UserProgress');
 
 async function initDB() {
   await connectDB();

@@ -8,6 +8,8 @@ const ApiError = require('../helpers/apiError');
 const { uploadToCloudinary, deleteFromCloudinary } = require('../helpers/cloudinaryUpload');
 const { getPagination } = require('../helpers/pagination');
 const notificationService = require('../services/notification.service');
+const achievementService = require('../services/achievement.service');
+const { cached, invalidate, CACHE_TTL } = require('../helpers/cache');
 
 exports.upload = async (req, res) => {
   if (!req.file) throw ApiError.badRequest('File is required');
@@ -31,6 +33,7 @@ exports.upload = async (req, res) => {
     uploadedBy: req.user._id,
   });
 
+  achievementService.checkAndAward(req.user._id).catch(() => {});
   created(res, { note }, 'Note uploaded and pending approval');
 };
 
@@ -156,6 +159,9 @@ exports.rateNote = async (req, res) => {
   note.rating = { averageScore: +(agg[0]?.avg || 0).toFixed(2), count: agg[0]?.count || 0 };
   await note.save();
 
+  // Check achievements for note owner (top-rated)
+  achievementService.checkAndAward(note.uploadedBy).catch(() => {});
+
   success(res, { rating: note.rating }, 'Rating saved');
 };
 
@@ -176,21 +182,33 @@ exports.getReviews = async (req, res) => {
 
 exports.requestNote = async (req, res) => {
   const request = await NoteRequest.create({ ...req.body, requestedBy: req.user._id });
+
+  // Notify verified seniors about the request (fire-and-forget)
+  const User = require('../models/User');
+  const emailService = require('../services/email.service');
+  User.find({ role: 'verified-senior', deletedAt: null }).select('email name').then(seniors => {
+    seniors.forEach(senior => emailService.sendNoteRequest(senior, request).catch(() => {}));
+  }).catch(() => {});
+
   created(res, { request }, 'Note request submitted');
 };
 
 exports.getTrending = async (req, res) => {
   const { subject, days = 7 } = req.query;
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const cacheKey = `trending:${subject || 'all'}:${days}`;
 
-  const filter = { deletedAt: null, approvalStatus: 'approved', createdAt: { $gte: since } };
-  if (subject) filter.subject = subject;
+  const notes = await cached(cacheKey, CACHE_TTL.TRENDING, async () => {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const filter = { deletedAt: null, approvalStatus: 'approved', createdAt: { $gte: since } };
+    if (subject) filter.subject = subject;
 
-  const notes = await Note.find(filter)
-    .sort({ downloads: -1, views: -1 })
-    .limit(10)
-    .populate('uploadedBy', 'name avatar')
-    .select('-fileUrl');
+    return Note.find(filter)
+      .sort({ downloads: -1, views: -1 })
+      .limit(10)
+      .populate('uploadedBy', 'name avatar')
+      .select('-fileUrl')
+      .lean();
+  });
 
   success(res, { notes });
 };

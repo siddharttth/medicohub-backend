@@ -22,8 +22,9 @@ exports.uploadFile = async (req, res) => {
 };
 
 exports.deleteFile = async (req, res) => {
-  const { publicId, resourceType = 'raw' } = req.body;
-  if (!publicId) throw ApiError.badRequest('publicId is required');
+  // publicId may contain slashes (e.g. medicohub/attachments/foo) — decode it
+  const publicId = decodeURIComponent(req.params.publicId);
+  const resourceType = req.query.resourceType || 'raw';
 
   await deleteFromCloudinary(publicId, resourceType);
   success(res, {}, 'File deleted');

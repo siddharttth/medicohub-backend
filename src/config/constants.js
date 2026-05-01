@@ -33,7 +33,7 @@ const REFRESH_TOKEN_EXPIRY = '7d';
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 const EXAM_PACK_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_MAX_ATTEMPTS = 2;
 const LOGIN_LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 module.exports = {

@@ -8,6 +8,7 @@ const setupDropsSocket = require('./sockets/drops.socket');
 const setupNotificationsSocket = require('./sockets/notifications.socket');
 const startStreakJob = require('./jobs/streak.job');
 const startTokenCleanupJob = require('./jobs/tokenCleanup.job');
+const startDailyReminderJob = require('./jobs/dailyReminder.job');
 
 const PORT = process.env.PORT || 5000;
 
@@ -31,6 +32,7 @@ const start = async () => {
 
   startStreakJob();
   startTokenCleanupJob();
+  startDailyReminderJob();
 
   server.listen(PORT, () => {
     console.log(`\nMedicoHub API running on port ${PORT}`);

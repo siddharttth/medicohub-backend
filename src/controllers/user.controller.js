@@ -4,6 +4,7 @@ const Drop = require('../models/Drop');
 const { success } = require('../helpers/response');
 const ApiError = require('../helpers/apiError');
 const { uploadToCloudinary } = require('../helpers/cloudinaryUpload');
+const { cached, invalidate, CACHE_TTL } = require('../helpers/cache');
 
 exports.getProfile = async (req, res) => {
   const user = await User.findOne({ _id: req.params.id, deletedAt: null })
@@ -37,33 +38,37 @@ exports.updateProfile = async (req, res) => {
   ).select('-passwordHash');
 
   if (!user) throw ApiError.notFound('User not found');
+  invalidate(`user:stats:${req.params.id}`).catch(() => {});
   success(res, { user });
 };
 
 exports.getStats = async (req, res) => {
   const userId = req.params.id;
+  const cacheKey = `user:stats:${userId}`;
 
-  const [user, notesShared, notesDownloadedAgg, messagesPosted] = await Promise.all([
-    User.findOne({ _id: userId, deletedAt: null }).select('streakDays totalStudyHours'),
-    Note.countDocuments({ uploadedBy: userId, deletedAt: null, approvalStatus: 'approved' }),
-    Note.aggregate([
-      { $match: { uploadedBy: require('mongoose').Types.ObjectId.createFromHexString(userId) } },
-      { $group: { _id: null, total: { $sum: '$downloads' } } },
-    ]),
-    Drop.countDocuments({ author: userId, status: 'visible' }),
-  ]);
+  const stats = await cached(cacheKey, CACHE_TTL.USER_STATS, async () => {
+    const [user, notesShared, notesDownloadedAgg, messagesPosted] = await Promise.all([
+      User.findOne({ _id: userId, deletedAt: null }).select('streakDays totalStudyHours'),
+      Note.countDocuments({ uploadedBy: userId, deletedAt: null, approvalStatus: 'approved' }),
+      Note.aggregate([
+        { $match: { uploadedBy: require('mongoose').Types.ObjectId.createFromHexString(userId) } },
+        { $group: { _id: null, total: { $sum: '$downloads' } } },
+      ]),
+      Drop.countDocuments({ author: userId, status: 'visible' }),
+    ]);
 
-  if (!user) throw ApiError.notFound('User not found');
-
-  const totalDownloads = notesDownloadedAgg[0]?.total || 0;
-
-  success(res, {
-    streakDays: user.streakDays,
-    notesShared,
-    totalStudyHours: user.totalStudyHours,
-    notesDownloaded: totalDownloads,
-    messagesPosted,
+    if (!user) return null;
+    return {
+      streakDays: user.streakDays,
+      notesShared,
+      totalStudyHours: user.totalStudyHours,
+      notesDownloaded: notesDownloadedAgg[0]?.total || 0,
+      messagesPosted,
+    };
   });
+
+  if (!stats) throw ApiError.notFound('User not found');
+  success(res, stats);
 };
 
 exports.getStreak = async (req, res) => {

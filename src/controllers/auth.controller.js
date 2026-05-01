@@ -4,6 +4,7 @@ const { signAccessToken, signRefreshToken, verifyRefreshToken, generateResetToke
 const { success, created } = require('../helpers/response');
 const ApiError = require('../helpers/apiError');
 const emailService = require('../services/email.service');
+const achievementService = require('../services/achievement.service');
 const { LOGIN_MAX_ATTEMPTS, LOGIN_LOCK_DURATION_MS, RESET_TOKEN_EXPIRY_MS } = require('../config/constants');
 
 const formatUser = (user) => ({
@@ -33,6 +34,7 @@ exports.register = async (req, res) => {
   await user.save();
 
   await emailService.sendWelcome(user);
+  achievementService.seedForUser(user._id).catch(() => {});
 
   created(res, { accessToken, refreshToken, user: formatUser(user) }, 'Registration successful');
 };

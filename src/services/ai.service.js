@@ -1,6 +1,11 @@
 const Groq = require('groq-sdk');
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Lazy client — avoids crash on startup if env var not yet loaded
+let _client = null;
+const getClient = () => {
+  if (!_client) _client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return _client;
+};
 
 // llama-3.3-70b-versatile is Groq's best general model — fast and accurate
 const MODEL = 'llama-3.3-70b-versatile';
@@ -12,7 +17,7 @@ Format responses clearly with bullet points where appropriate.
 Keep answers concise but thorough. Always mention if a topic is high-yield for exams.`;
 
 const chat = (messages, maxTokens = 1024) =>
-  client.chat.completions.create({
+  getClient().chat.completions.create({
     model: MODEL,
     max_tokens: maxTokens,
     messages,

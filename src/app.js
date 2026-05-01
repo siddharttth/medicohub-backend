@@ -21,6 +21,7 @@ const notificationRoutes = require('./routes/notification.routes');
 const achievementRoutes = require('./routes/achievement.routes');
 const bookmarkRoutes = require('./routes/bookmark.routes');
 const adminRoutes = require('./routes/admin.routes');
+const topicRoutes = require('./routes/topic.routes');
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use(`${API}/notifications`, notificationRoutes);
 app.use(`${API}/achievements`, achievementRoutes);
 app.use(`${API}/bookmarks`, bookmarkRoutes);
 app.use(`${API}/admin`, adminRoutes);
+app.use(`${API}/topics`, topicRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
