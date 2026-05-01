@@ -28,11 +28,10 @@ const examPackSchema = new mongoose.Schema({
   isCached: { type: Boolean, default: false },
 }, { timestamps: true });
 
-examPackSchema.pre('save', function (next) {
+examPackSchema.pre('save', async function () {
   if (!this.expiresAt) {
     this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   }
-  next();
 });
 
 examPackSchema.index({ subject: 1 });
