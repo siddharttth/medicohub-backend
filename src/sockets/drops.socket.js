@@ -19,14 +19,37 @@ const setupDropsSocket = (io) => {
     }
   });
 
-  drops.on('connection', (socket) => {
-    socket.on('join-subject', (subject) => {
-      socket.join(subject || 'general');
-    });
+  const getRoom = (payload) => {
+    if (!payload) return 'general';
+    const subject = typeof payload === 'string' ? payload : payload.subject;
+    return subject || 'general';
+  };
 
-    socket.on('leave-subject', (subject) => {
-      socket.leave(subject || 'general');
-    });
+  const joinRoom = (socket, payload) => {
+    const room = getRoom(payload);
+    if (socket.currentSubjectRoom && socket.currentSubjectRoom !== room) {
+      socket.leave(socket.currentSubjectRoom);
+    }
+    socket.currentSubjectRoom = room;
+    socket.join(room);
+  };
+
+  const leaveRoom = (socket, payload) => {
+    const room = getRoom(payload);
+    socket.leave(room);
+    if (socket.currentSubjectRoom === room) {
+      socket.currentSubjectRoom = null;
+    }
+  };
+
+  drops.on('connection', (socket) => {
+    socket.on('join_room', (payload) => joinRoom(socket, payload));
+    socket.on('join-room', (payload) => joinRoom(socket, payload));
+    socket.on('join-subject', (payload) => joinRoom(socket, payload));
+
+    socket.on('leave_room', (payload) => leaveRoom(socket, payload));
+    socket.on('leave-room', (payload) => leaveRoom(socket, payload));
+    socket.on('leave-subject', (payload) => leaveRoom(socket, payload));
 
     socket.on('disconnect', () => {});
   });

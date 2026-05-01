@@ -10,7 +10,21 @@ const { getPagination } = require('../helpers/pagination');
 const notificationService = require('../services/notification.service');
 const achievementService = require('../services/achievement.service');
 const { cached, invalidate, CACHE_TTL } = require('../helpers/cache');
-
+const normalizeNoteType = (noteType) => {
+  if (!noteType || typeof noteType !== 'string') return noteType;
+  const normalized = noteType.trim().toLowerCase();
+  switch (normalized) {
+    case 'pdf': return 'PDF';
+    case 'pyq': return 'PYQ';
+    case 'doc': return 'DOC';
+    case 'csv': return 'CSV';
+    case 'image': return 'Image';
+    case 'handwritten': return 'Handwritten';
+    case 'diagram': return 'Diagram';
+    case 'other': return 'Other';
+    default: return noteType;
+  }
+};
 exports.upload = async (req, res) => {
   if (!req.file) throw ApiError.badRequest('File is required');
 
@@ -19,22 +33,28 @@ exports.upload = async (req, res) => {
     try { tags = JSON.parse(tags); } catch { tags = tags.split(',').map(t => t.trim()); }
   }
 
+  const resourceType = req.file.mimetype.startsWith('image/') ? 'image' : 'raw';
   const result = await uploadToCloudinary(req.file.buffer, {
     folder: 'medicohub/notes',
-    resource_type: 'raw',
+    resource_type: resourceType,
     use_filename: true,
   });
 
   const note = await Note.create({
     ...req.body,
+    noteType: normalizeNoteType(req.body.noteType),
     tags: tags || [],
     fileUrl: result.secure_url,
+    fileName: req.file.originalname,
+    fileType: req.file.mimetype,
     fileSize: req.file.size,
     uploadedBy: req.user._id,
+    approvalStatus: 'approved',
+    approvedBy: req.user._id,
   });
 
   achievementService.checkAndAward(req.user._id).catch(() => {});
-  created(res, { note }, 'Note uploaded and pending approval');
+  created(res, { note }, 'Note uploaded and visible to all users');
 };
 
 exports.search = async (req, res) => {
@@ -43,7 +63,7 @@ exports.search = async (req, res) => {
 
   const filter = { deletedAt: null, approvalStatus: 'approved' };
   if (subject) filter.subject = subject;
-  if (noteType) filter.noteType = noteType;
+  if (noteType) filter.noteType = normalizeNoteType(noteType);
   if (year) filter.year = year;
   if (q) filter.$or = [
     { title: { $regex: q, $options: 'i' } },
