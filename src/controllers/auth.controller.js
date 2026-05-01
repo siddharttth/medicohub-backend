@@ -83,7 +83,7 @@ exports.refresh = async (req, res) => {
   const { refreshToken } = req.body;
   const decoded = verifyRefreshToken(refreshToken);
 
-  const user = await User.findOne({ _id: decoded.userId, deletedAt: null });
+  const user = await User.findOne({ _id: decoded.userId, deletedAt: null }).select('+refreshTokenHash');
   if (!user || user.refreshTokenHash !== hashToken(refreshToken)) {
     throw ApiError.unauthorized('Invalid refresh token');
   }
