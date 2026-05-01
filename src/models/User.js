@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
     notifications: { type: Boolean, default: true },
     privacy: { type: String, enum: ['public', 'private'], default: 'public' },
   },
+  savedPacks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ExamPack' }],
+  refreshTokenHash: { type: String, default: null, select: false },
+  resetPasswordHash: { type: String, default: null, select: false },
+  resetPasswordExpiry: { type: Date, default: null, select: false },
+  failedLoginAttempts: { type: Number, default: 0, select: false },
+  lockUntil: { type: Date, default: null, select: false },
   deletedAt: { type: Date, default: null },
 }, { timestamps: true });
 
