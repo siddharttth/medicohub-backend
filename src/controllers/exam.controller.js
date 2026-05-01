@@ -29,7 +29,7 @@ exports.generate = async (req, res) => {
     subject,
     packType: type,
     content,
-    generatedBy: `claude-sonnet-4-6 @ ${new Date().toISOString()}`,
+    generatedBy: `llama-3.3-70b-versatile (Groq) @ ${new Date().toISOString()}`,
     generatedAt: new Date(),
     expiresAt: new Date(Date.now() + EXAM_PACK_CACHE_TTL_MS),
     isCached: true,
