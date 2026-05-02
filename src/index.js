@@ -15,8 +15,8 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
-    credentials: true,
+    origin: process.env.NODE_ENV === 'development' ? '*' : (process.env.ALLOWED_ORIGINS || '').split(','),
+    credentials: false,
   },
 });
 
