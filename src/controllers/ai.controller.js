@@ -5,6 +5,7 @@ const aiService = require('../services/ai.service');
 const Joi = require('joi');
 const { SUBJECTS } = require('../config/constants');
 const ApiError = require('../helpers/apiError');
+const { updateStreak } = require('../helpers/streakUpdater');
 
 const askSchema = Joi.object({
   question: Joi.string().trim().min(3).max(1000).required(),
@@ -30,6 +31,8 @@ exports.ask = async (req, res) => {
     aiResponse: answer,
     subject,
   });
+
+  updateStreak(req.user._id).catch(() => {});
 
   success(res, { answer, subject });
 };

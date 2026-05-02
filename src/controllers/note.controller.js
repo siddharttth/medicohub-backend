@@ -10,6 +10,7 @@ const { getPagination } = require('../helpers/pagination');
 const notificationService = require('../services/notification.service');
 const achievementService = require('../services/achievement.service');
 const { cached, invalidate, CACHE_TTL } = require('../helpers/cache');
+const { updateStreak } = require('../helpers/streakUpdater');
 const normalizeNoteType = (noteType) => {
   if (!noteType || typeof noteType !== 'string') return noteType;
   const normalized = noteType.trim().toLowerCase();
@@ -98,17 +99,22 @@ exports.getOne = async (req, res) => {
   note.views += 1;
   await note.save();
 
+  if (req.user) updateStreak(req.user._id).catch(() => {});
+
   success(res, { note });
 };
 
 exports.download = async (req, res) => {
+  if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+    throw ApiError.badRequest('Invalid note ID');
+  }
   const note = await Note.findOne({ _id: req.params.id, deletedAt: null, approvalStatus: 'approved' });
   if (!note) throw ApiError.notFound('Note not found');
 
   note.downloads += 1;
   await note.save();
 
-  success(res, { fileUrl: note.fileUrl });
+  success(res, { downloadUrl: note.fileUrl, fileName: note.fileName, fileType: note.fileType });
 };
 
 exports.deleteNote = async (req, res) => {
@@ -211,6 +217,56 @@ exports.requestNote = async (req, res) => {
   }).catch(() => {});
 
   created(res, { request }, 'Note request submitted');
+};
+
+exports.getPendingRequests = async (req, res) => {
+  const { page, limit, skip } = getPagination(req.query);
+  const [requests, totalCount] = await Promise.all([
+    NoteRequest.find({ status: 'open' })
+      .sort({ requestedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('requestedBy', '_id name'),
+    NoteRequest.countDocuments({ status: 'open' }),
+  ]);
+  paginated(res, requests, totalCount, page, limit);
+};
+
+exports.getMyRequests = async (req, res) => {
+  const { page, limit, skip } = getPagination(req.query);
+  const [requests, totalCount] = await Promise.all([
+    NoteRequest.find({ requestedBy: req.user._id })
+      .sort({ requestedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('requestedBy', '_id name')
+      .populate({ path: 'fulfilledNote', select: 'title fileName uploadedBy', populate: { path: 'uploadedBy', select: 'name' } }),
+    NoteRequest.countDocuments({ requestedBy: req.user._id }),
+  ]);
+  paginated(res, requests, totalCount, page, limit);
+};
+
+exports.fulfillRequest = async (req, res) => {
+  const { noteId } = req.body;
+  if (!noteId) throw ApiError.badRequest('noteId is required');
+
+  const request = await NoteRequest.findById(req.params.requestId);
+  if (!request) throw ApiError.notFound('Request not found');
+  if (request.status === 'fulfilled') throw ApiError.badRequest('Request already fulfilled');
+
+  const note = await Note.findOne({ _id: noteId, deletedAt: null });
+  if (!note) throw ApiError.notFound('Note not found');
+
+  request.status = 'fulfilled';
+  request.fulfilledNote = noteId;
+  await request.save();
+
+  await request.populate([
+    { path: 'requestedBy', select: '_id name' },
+    { path: 'fulfilledNote', select: 'title fileName uploadedBy', populate: { path: 'uploadedBy', select: 'name' } },
+  ]);
+
+  success(res, { request }, 'Request fulfilled');
 };
 
 exports.getTrending = async (req, res) => {
