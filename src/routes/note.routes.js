@@ -8,9 +8,12 @@ const { generalLimiter, readLimiter } = require('../middleware/rateLimiter');
 
 router.get('/trending', readLimiter, ctrl.getTrending);
 router.get('/search', readLimiter, validate(v.searchNotes, 'query'), ctrl.search);
+router.get('/requests', authenticate, readLimiter, ctrl.getPendingRequests);
+router.get('/requests/mine', authenticate, readLimiter, ctrl.getMyRequests);
 
 router.post('/upload', authenticate, generalLimiter, upload.single('file'), validate(v.uploadNote), ctrl.upload);
 router.post('/request', authenticate, generalLimiter, validate(v.requestNote), ctrl.requestNote);
+router.patch('/requests/:requestId/fulfill', authenticate, generalLimiter, ctrl.fulfillRequest);
 
 router.get('/:id', readLimiter, ctrl.getOne);
 router.get('/:id/download', authenticate, ctrl.download);

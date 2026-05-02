@@ -18,6 +18,8 @@ const noteSchema = new mongoose.Schema({
   noteType: { type: String, required: true, enum: NOTE_TYPES },
   description: { type: String },
   fileUrl: { type: String }, // Cloudinary URL
+  fileName: { type: String },
+  fileType: { type: String },
   fileSize: { type: Number }, // bytes
   tags: [{ type: String }],
   uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

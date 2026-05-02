@@ -4,6 +4,7 @@ const { success, created, paginated } = require('../helpers/response');
 const ApiError = require('../helpers/apiError');
 const { getPagination } = require('../helpers/pagination');
 const aiService = require('../services/ai.service');
+const { updateStreak } = require('../helpers/streakUpdater');
 const { EXAM_PACK_CACHE_TTL_MS } = require('../config/constants');
 
 exports.generate = async (req, res) => {
@@ -20,6 +21,7 @@ exports.generate = async (req, res) => {
   if (cached) {
     cached.requestCount += 1;
     await cached.save();
+    updateStreak(req.user._id).catch(() => {});
     return success(res, { pack: cached, fromCache: true });
   }
 
@@ -34,6 +36,8 @@ exports.generate = async (req, res) => {
     expiresAt: new Date(Date.now() + EXAM_PACK_CACHE_TTL_MS),
     isCached: true,
   });
+
+  updateStreak(req.user._id).catch(() => {});
 
   created(res, { pack, fromCache: false }, 'Exam pack generated');
 };
@@ -79,5 +83,6 @@ exports.getSavedPacks = async (req, res) => {
 exports.generateViva = async (req, res) => {
   const { subject } = req.body;
   const qa = await aiService.generateVivaQA(subject);
+  updateStreak(req.user._id).catch(() => {});
   success(res, { viva: qa });
 };

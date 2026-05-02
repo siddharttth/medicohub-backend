@@ -7,6 +7,7 @@ const noteRequestSchema = new mongoose.Schema({
   noteType: { type: String, enum: ['PDF', 'Diagram', 'Summary'], required: true },
   description: { type: String },
   status: { type: String, enum: ['open', 'fulfilled', 'closed'], default: 'open' },
+  fulfilledNote: { type: mongoose.Schema.Types.ObjectId, ref: 'Note', default: null },
   requestedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

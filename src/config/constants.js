@@ -6,7 +6,7 @@ const SUBJECTS = [
   'Anaesthesia', 'Other',
 ];
 
-const NOTE_TYPES = ['PDF', 'Handwritten', 'Diagram', 'PYQ'];
+const NOTE_TYPES = ['PDF', 'Handwritten', 'Diagram', 'PYQ', 'DOC', 'CSV', 'Image', 'Other'];
 const YEARS = ['1st', '2nd', '3rd', 'Final'];
 const ROLES = ['user', 'verified-senior', 'admin'];
 const PLATFORMS = ['ios', 'android', 'web'];
@@ -24,8 +24,21 @@ const ACHIEVEMENT_TYPES = [
 const AUDIT_ACTIONS = ['approve-note', 'reject-note', 'delete-message', 'ban-user', 'flag-content'];
 const TARGET_TYPES = ['note', 'message', 'user'];
 
-const ALLOWED_FILE_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/csv',
+  'application/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.oasis.opendocument.text',
+  'application/rtf',
+];
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const ACCESS_TOKEN_EXPIRY = '15m';

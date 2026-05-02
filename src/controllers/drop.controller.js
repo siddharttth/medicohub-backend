@@ -35,10 +35,13 @@ exports.createMessage = async (req, res) => {
 
   const populated = await drop.populate('author', 'name avatar role');
 
-  // Broadcast via socket.io
+  // Broadcast via socket.io to the subject room only
   const io = req.app.get('io');
   if (io) {
-    io.of('/drops').to(subject || 'general').emit('new-drop', populated);
+    const room = subject || 'general';
+    io.of('/drops').to(room).emit('new_message', populated);
+    io.of('/drops').to(room).emit('new-message', populated);
+    io.of('/drops').to(room).emit('new-drop', populated); // backward compatibility
   }
 
   created(res, { drop: populated }, 'Message posted');

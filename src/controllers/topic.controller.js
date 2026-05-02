@@ -34,17 +34,21 @@ exports.completeTopic = async (req, res) => {
   const topic = topics.find(t => t.id === topicId);
   if (!topic) throw ApiError.notFound('Topic not found');
 
-  // Upsert — idempotent
-  await UserProgress.findOneAndUpdate(
-    { userId: req.user._id, topicId },
-    { userId: req.user._id, subject, topicId, topicTitle: topic.title, completedAt: new Date() },
-    { upsert: true, new: true }
-  );
+  const existing = await UserProgress.findOne({ userId: req.user._id, topicId });
 
-  // Update streak
+  if (existing) {
+    // Toggle off
+    await existing.deleteOne();
+    success(res, { topicId, completed: false, streakDays: null });
+    return;
+  }
+
+  // Toggle on
+  await UserProgress.create({
+    userId: req.user._id, subject, topicId, topicTitle: topic.title, completedAt: new Date(),
+  });
+
   const newStreak = await updateStreak(req.user._id);
-
-  // Check and award achievements async (don't block response)
   achievementService.checkAndAward(req.user._id).catch(() => {});
 
   success(res, { topicId, completed: true, streakDays: newStreak });
