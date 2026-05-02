@@ -88,6 +88,15 @@ exports.search = async (req, res) => {
     Note.countDocuments(filter),
   ]);
 
+  if (req.user && notes.length > 0) {
+    const noteIds = notes.map((note) => note._id);
+    const ratings = await Rating.find({ noteId: { $in: noteIds }, userId: req.user._id }).select('noteId');
+    const ratedIds = new Set(ratings.map((rating) => rating.noteId.toString()));
+    notes.forEach((note) => {
+      note.set('hasRated', ratedIds.has(note._id.toString()), { strict: false });
+    });
+  }
+
   paginated(res, notes, totalCount, page, limit);
 };
 
@@ -99,7 +108,11 @@ exports.getOne = async (req, res) => {
   note.views += 1;
   await note.save();
 
-  if (req.user) updateStreak(req.user._id).catch(() => {});
+  if (req.user) {
+    updateStreak(req.user._id).catch(() => {});
+    const existingRating = await Rating.exists({ noteId: note._id, userId: req.user._id });
+    note.set('hasRated', Boolean(existingRating), { strict: false });
+  }
 
   success(res, { note });
 };
@@ -165,17 +178,16 @@ exports.getBookmarks = async (req, res) => {
 };
 
 exports.rateNote = async (req, res) => {
-  const { score, review } = req.body;
   const noteId = req.params.id;
-
   const note = await Note.findOne({ _id: noteId, deletedAt: null });
   if (!note) throw ApiError.notFound('Note not found');
 
-  await Rating.findOneAndUpdate(
-    { noteId, userId: req.user._id },
-    { score, review },
-    { upsert: true }
-  );
+  const existingRating = await Rating.findOne({ noteId, userId: req.user._id });
+  if (existingRating) {
+    await existingRating.deleteOne();
+  } else {
+    await Rating.create({ noteId, userId: req.user._id, score: 1 });
+  }
 
   const agg = await Rating.aggregate([
     { $match: { noteId: new mongoose.Types.ObjectId(noteId) } },
@@ -188,7 +200,7 @@ exports.rateNote = async (req, res) => {
   // Check achievements for note owner (top-rated)
   achievementService.checkAndAward(note.uploadedBy).catch(() => {});
 
-  success(res, { rating: note.rating }, 'Rating saved');
+  success(res, { rating: note.rating }, existingRating ? 'Rating removed' : 'Rating saved');
 };
 
 exports.getReviews = async (req, res) => {

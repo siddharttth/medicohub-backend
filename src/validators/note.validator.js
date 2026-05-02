@@ -25,9 +25,12 @@ const searchNotes = Joi.object({
 });
 
 const rateNote = Joi.object({
-  score: Joi.number().integer().min(1).max(5).required(),
+  score: Joi.number().integer().min(1).max(5),
+  rating: Joi.number().integer().min(1).max(5),
   review: Joi.string().trim().max(500).optional(),
-});
+})
+  .or('score', 'rating')
+  .messages({ 'object.missing': 'Either "score" or "rating" is required' });
 
 const requestNote = Joi.object({
   subject: Joi.string().valid(...SUBJECTS).required(),
