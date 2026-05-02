@@ -71,6 +71,27 @@ exports.getStats = async (req, res) => {
   success(res, stats);
 };
 
+exports.logStudySession = async (req, res) => {
+  const userId = req.user._id;
+  const { minutes } = req.body;
+  if (!minutes || minutes <= 0) return success(res, {});
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const user = await User.findById(userId).select('dailyLog totalStudyHours');
+  if (!user) throw ApiError.notFound('User not found');
+
+  const log = user.dailyLog.find(d => d.date.toISOString().split('T')[0] === todayStr);
+  if (log) {
+    log.minutesSpent += minutes;
+  } else {
+    user.dailyLog.push({ date: new Date(), minutesSpent: minutes });
+  }
+  user.totalStudyHours = Math.round(((user.totalStudyHours || 0) * 60 + minutes) / 60 * 10) / 10;
+  await user.save();
+  invalidate(`user:stats:${userId}`).catch(() => {});
+  success(res, { totalStudyHours: user.totalStudyHours });
+};
+
 exports.getStreak = async (req, res) => {
   const user = await User.findOne({ _id: req.params.id, deletedAt: null }).select('dailyLog');
   if (!user) throw ApiError.notFound('User not found');

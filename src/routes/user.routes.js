@@ -9,5 +9,6 @@ router.get('/:id', ctrl.getProfile);
 router.patch('/:id', authenticate, upload.single('avatar'), validate(updateProfile), ctrl.updateProfile);
 router.get('/:id/stats', ctrl.getStats);
 router.get('/:id/streak', ctrl.getStreak);
+router.post('/study-session', authenticate, ctrl.logStudySession);
 
 module.exports = router;
