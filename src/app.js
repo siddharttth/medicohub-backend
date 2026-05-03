@@ -25,6 +25,8 @@ const topicRoutes = require('./routes/topic.routes');
 
 const app = express();
 
+app.set('trust proxy', 1); // Render sits behind a proxy; trust first hop for rate limiting
+
 // Security & performance
 app.use(helmet());
 app.use(compression());
