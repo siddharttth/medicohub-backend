@@ -42,7 +42,7 @@ const ALLOWED_FILE_TYPES = [
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
+const REFRESH_TOKEN_EXPIRY = '90d';
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 const EXAM_PACK_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_PACKS_PER_DAY = 3;
