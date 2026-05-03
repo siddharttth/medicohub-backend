@@ -60,11 +60,24 @@ exports.upload = async (req, res) => {
 
 exports.search = async (req, res) => {
   const { subject, noteType, year, sortBy = 'createdAt', q } = req.query;
+  let { subjects, noteTypes } = req.query;
   const { page, limit, skip } = getPagination(req.query);
 
+  // Normalize array params (query strings can arrive as comma-separated or repeated keys)
+  if (typeof subjects === 'string') subjects = subjects.split(',').map(s => s.trim()).filter(Boolean);
+  if (typeof noteTypes === 'string') noteTypes = noteTypes.split(',').map(s => s.trim()).filter(Boolean);
+
   const filter = { deletedAt: null, approvalStatus: 'approved' };
-  if (subject) filter.subject = subject;
-  if (noteType) filter.noteType = normalizeNoteType(noteType);
+  if (subjects && subjects.length > 0) {
+    filter.subject = { $in: subjects };
+  } else if (subject) {
+    filter.subject = subject;
+  }
+  if (noteTypes && noteTypes.length > 0) {
+    filter.noteType = { $in: noteTypes.map(normalizeNoteType) };
+  } else if (noteType) {
+    filter.noteType = normalizeNoteType(noteType);
+  }
   if (year) filter.year = year;
   if (q) filter.$or = [
     { title: { $regex: q, $options: 'i' } },
