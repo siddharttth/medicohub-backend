@@ -16,12 +16,21 @@ const uploadNote = Joi.object({
 
 const searchNotes = Joi.object({
   subject: Joi.string().valid(...SUBJECTS).optional(),
+  subjects: Joi.alternatives().try(
+    Joi.array().items(Joi.string().valid(...SUBJECTS)),
+    Joi.string()
+  ).optional(),
   noteType: Joi.string().valid(...NOTE_TYPES).insensitive().optional(),
+  noteTypes: Joi.alternatives().try(
+    Joi.array().items(Joi.string().valid(...NOTE_TYPES).insensitive()),
+    Joi.string()
+  ).optional(),
   year: Joi.string().valid(...YEARS).optional(),
   sortBy: Joi.string().valid('rating', 'downloads', 'createdAt').default('createdAt'),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(50).default(20),
   q: Joi.string().trim().optional(),
+  query: Joi.string().trim().optional(),
 });
 
 const rateNote = Joi.object({
