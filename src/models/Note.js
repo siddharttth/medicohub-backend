@@ -35,7 +35,15 @@ const noteSchema = new mongoose.Schema({
   batch: { type: Number }, // graduation year
   isHighYield: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+});
+
+noteSchema.virtual('ratingCount').get(function () {
+  return this.rating?.count || 0;
+});
 
 noteSchema.index({ subject: 1 });
 noteSchema.index({ noteType: 1 });

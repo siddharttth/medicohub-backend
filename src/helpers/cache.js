@@ -1,9 +1,10 @@
-const { getRedis } = require('../config/redis');
+const { getRedis, ensureRedisConnected } = require('../config/redis');
 
 // Returns cached value or calls fn(), caches result for ttlSeconds, returns it
 const cached = async (key, ttlSeconds, fn) => {
   const redis = getRedis();
   try {
+    await ensureRedisConnected(redis);
     const hit = await redis.get(key);
     if (hit) return JSON.parse(hit);
   } catch {
@@ -13,6 +14,7 @@ const cached = async (key, ttlSeconds, fn) => {
   const value = await fn();
 
   try {
+    await ensureRedisConnected(redis);
     await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
   } catch {
     // Best-effort
@@ -24,6 +26,7 @@ const cached = async (key, ttlSeconds, fn) => {
 const invalidate = async (...keys) => {
   const redis = getRedis();
   try {
+    await ensureRedisConnected(redis);
     if (keys.length) await redis.del(...keys);
   } catch {
     // Best-effort

@@ -20,22 +20,33 @@ const formatUser = (user) => ({
 
 exports.register = async (req, res) => {
   const { email, password, name, college, year } = req.body;
+  console.log('[Auth:Register] start', { email, name, college, year });
 
   const exists = await User.findOne({ email });
-  if (exists) throw ApiError.conflict('Email already registered');
+  if (exists) {
+    console.log('[Auth:Register] conflict - email already registered', email);
+    throw ApiError.conflict('Email already registered');
+  }
 
   const passwordHash = await hashPassword(password);
   const user = await User.create({ email, passwordHash, name, college, year });
+  console.log('[Auth:Register] user created', { id: user._id.toString(), email: user.email });
 
   const accessToken = signAccessToken({ userId: user._id, role: user.role });
   const refreshToken = signRefreshToken({ userId: user._id });
 
   user.refreshTokenHash = hashToken(refreshToken);
   await user.save();
+  console.log('[Auth:Register] refresh token saved for user', user._id.toString());
 
-  await emailService.sendWelcome(user);
-  achievementService.seedForUser(user._id).catch(() => {});
+  emailService.sendWelcome(user).catch((err) => {
+    console.error('[Auth:Register] welcome email failed', err);
+  });
+  achievementService.seedForUser(user._id).catch((err) => {
+    console.error('[Auth:Register] seed achievements failed', err);
+  });
 
+  console.log('[Auth:Register] sending response', { userId: user._id.toString() });
   created(res, { accessToken, refreshToken, user: formatUser(user) }, 'Registration successful');
 };
 

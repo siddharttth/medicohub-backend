@@ -9,6 +9,10 @@ const createTransport = () =>
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    family: 4, // force IPv4 — Render does not support IPv6 outbound
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
 
 const send = async (to, subject, html) => {

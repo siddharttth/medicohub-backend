@@ -16,6 +16,7 @@ const errorHandler = (err, req, res, _next) => {
   }
 
   if (err instanceof ApiError) {
+    console.error('[ApiError]', err.statusCode, err.message, err.errors);
     return res.status(err.statusCode).json({
       success: false,
       message: err.message,
