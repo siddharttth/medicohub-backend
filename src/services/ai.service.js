@@ -1,77 +1,120 @@
 const Groq = require('groq-sdk');
 
-// Lazy client — avoids crash on startup if env var not yet loaded
+// Lazy client
 let _client = null;
 const getClient = () => {
-  if (!_client) _client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!_client) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('Missing GROQ_API_KEY');
+    }
+    _client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
   return _client;
 };
 
-// llama-3.3-70b-versatile is Groq's best general model — fast and accurate
+// Model
 const MODEL = 'llama-3.3-70b-versatile';
 
-const MEDICAL_SYSTEM_PROMPT = `You are MedicoHub AI, an expert medical education assistant for MBBS students.
-You provide accurate, evidence-based answers about medical subjects including Anatomy, Physiology,
-Biochemistry, Pathology, Pharmacology, Microbiology, and clinical subjects.
-Format responses clearly with bullet points where appropriate.
-Keep answers concise but thorough. Always mention if a topic is high-yield for exams.`;
+// Improved system prompt (focused on clarity + exams)
+const MEDICAL_SYSTEM_PROMPT = `
+You are MedicoHub AI, an expert MBBS-level medical assistant.
 
-const chat = (messages, maxTokens = 1024) =>
-  getClient().chat.completions.create({
-    model: MODEL,
-    max_tokens: maxTokens,
-    messages,
-  });
+Guidelines:
+- Explain in simple, clear language
+- Be concise but complete
+- Use bullet points when helpful
+- Highlight high-yield exam points clearly
+- Structure answers when relevant:
+  Definition → Cause → Mechanism → Symptoms → Diagnosis → Treatment
+- Avoid unnecessary complexity
+`;
 
+// Core chat function
+const chat = async (messages, maxTokens = 1024, temperature = 0.3) => {
+  try {
+    const res = await getClient().chat.completions.create({
+      model: MODEL,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
+    });
+
+    if (!res?.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response from Groq API');
+    }
+
+    return res.choices[0].message.content.trim();
+  } catch (err) {
+    console.error('Groq Error:', err.message);
+    throw new Error('AI service temporarily unavailable');
+  }
+};
+
+
+// =========================
+// FEATURES
+// =========================
+
+// 1. Exam Pack (now plain text)
 const generateExamPack = async (subject, packType) => {
-  const prompt = `Generate a comprehensive ${packType} exam preparation pack for ${subject}.
-Return ONLY a valid JSON object with this exact structure (no markdown, no extra text):
-{
-  "topics": [{"id": "1", "title": "Topic name", "yield": "high|medium|low"}],
-  "mnemonics": ["mnemonic1", "mnemonic2"],
-  "pyqs": [{"year": 2023, "marks": 10, "type": "long answer|short answer|MCQ"}],
-  "tips": "General exam tips for this subject"
-}
-Include 10-15 topics, 5-8 mnemonics, and 5-10 PYQs.`;
+  const prompt = `
+Create a ${packType} exam preparation guide for ${subject}.
 
-  const res = await chat([
+Include:
+- Important topics (mark high-yield clearly)
+- Easy mnemonics
+- Previous year question patterns
+- Practical exam tips
+
+Keep it structured and easy to revise.
+`;
+
+  return await chat([
     { role: 'system', content: MEDICAL_SYSTEM_PROMPT },
     { role: 'user', content: prompt },
-  ], 2048);
-
-  const raw = res.choices[0].message.content;
-  const jsonMatch = raw.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Groq did not return valid JSON for exam pack');
-  return JSON.parse(jsonMatch[0]);
+  ], 1200);
 };
 
+
+// 2. Viva Question (plain text)
 const generateVivaQA = async (subject) => {
-  const prompt = `Generate one high-yield viva voce question and a comprehensive answer for ${subject}.
-Return ONLY valid JSON (no markdown): {"question": "...", "answer": "..."}`;
+  const prompt = `
+Give one high-yield viva question from ${subject} and a clear, examiner-level answer.
 
-  const res = await chat([
+Keep it crisp and structured.
+`;
+
+  return await chat([
     { role: 'system', content: MEDICAL_SYSTEM_PROMPT },
     { role: 'user', content: prompt },
-  ], 512);
-
-  const raw = res.choices[0].message.content;
-  const jsonMatch = raw.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Groq did not return valid JSON for viva');
-  return JSON.parse(jsonMatch[0]);
+  ], 600);
 };
 
+
+// 3. Ask Question (main chatbot)
 const askQuestion = async (question, subject, history = []) => {
   const messages = [
     { role: 'system', content: MEDICAL_SYSTEM_PROMPT },
+
+    // Correct history mapping
     ...history.slice(-10).flatMap(h => [
-      { role: 'user', content: h.aiMessage },
+      { role: 'user', content: h.userMessage },
       { role: 'assistant', content: h.aiResponse },
     ]),
-    { role: 'user', content: subject ? `[${subject}] ${question}` : question },
+
+    {
+      role: 'user',
+      content: subject ? `[${subject}] ${question}` : question,
+    },
   ];
 
-  const res = await chat(messages, 1024);
-  return res.choices[0].message.content;
+  return await chat(messages, 1000);
 };
 
-module.exports = { generateExamPack, generateVivaQA, askQuestion };
+
+// Export
+module.exports = {
+  generateExamPack,
+  generateVivaQA,
+  askQuestion,
+};
