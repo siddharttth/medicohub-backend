@@ -5,7 +5,6 @@ const customTopicSchema = new mongoose.Schema({
   subject: { type: String, required: true },
   title: { type: String, required: true },
   yield: { type: String, enum: ['high', 'medium', 'low'], default: 'medium' },
-  completed: { type: Boolean, default: false },
 }, { timestamps: true });
 
 customTopicSchema.index({ userId: 1, subject: 1 });

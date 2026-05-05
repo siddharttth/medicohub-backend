@@ -55,23 +55,25 @@ exports.completeTopic = async (req, res) => {
   success(res, { topicId, completed: true, streakDays: newStreak });
 };
 
+const toTopicDTO = (t) => ({ id: t._id.toString(), title: t.title, yield: t.yield, completed: false });
+
 exports.getCustomTopics = async (req, res) => {
   const { subject } = req.params;
   const topics = await CustomTopic.find({ userId: req.user._id, subject }).lean();
-  success(res, { topics: topics.map(t => ({ id: t._id.toString(), title: t.title, yield: t.yield, completed: t.completed })) });
+  success(res, { topics: topics.map(toTopicDTO) });
 };
 
 exports.addCustomTopic = async (req, res) => {
   const { subject } = req.params;
-  const { title } = req.body;
+  const title = req.body.title?.trim();
   if (!title) throw ApiError.badRequest('title is required');
   const topic = await CustomTopic.create({ userId: req.user._id, subject, title });
-  success(res, { topic: { id: topic._id.toString(), title: topic.title, yield: topic.yield, completed: topic.completed } }, 'Created', 201);
+  success(res, { topic: toTopicDTO(topic) }, 'Created', 201);
 };
 
 exports.editCustomTopic = async (req, res) => {
   const { id } = req.params;
-  const { title } = req.body;
+  const title = req.body.title?.trim();
   if (!title) throw ApiError.badRequest('title is required');
   const topic = await CustomTopic.findOneAndUpdate(
     { _id: id, userId: req.user._id },
@@ -79,7 +81,7 @@ exports.editCustomTopic = async (req, res) => {
     { new: true }
   );
   if (!topic) throw ApiError.notFound('Custom topic not found');
-  success(res, { topic: { id: topic._id.toString(), title: topic.title, yield: topic.yield, completed: topic.completed } });
+  success(res, { topic: toTopicDTO(topic) });
 };
 
 exports.deleteCustomTopic = async (req, res) => {
