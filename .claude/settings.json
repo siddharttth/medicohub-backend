@@ -4,7 +4,9 @@
       "Bash(npm init *)",
       "Bash(npm install *)",
       "Bash(git commit -m ' *)",
-      "Bash(node -e \"require\\('./src/app'\\)\")"
+      "Bash(node -e \"require\\('./src/app'\\)\")",
+      "Bash(git pull *)",
+      "Bash(git stash *)"
     ]
   }
 }

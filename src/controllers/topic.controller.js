@@ -1,4 +1,5 @@
 const UserProgress = require('../models/UserProgress');
+const CustomTopic = require('../models/CustomTopic');
 const { success } = require('../helpers/response');
 const ApiError = require('../helpers/apiError');
 const { getTopicsForSubject } = require('../config/topics');
@@ -52,4 +53,37 @@ exports.completeTopic = async (req, res) => {
   achievementService.checkAndAward(req.user._id).catch(() => {});
 
   success(res, { topicId, completed: true, streakDays: newStreak });
+};
+
+exports.getCustomTopics = async (req, res) => {
+  const { subject } = req.params;
+  const topics = await CustomTopic.find({ userId: req.user._id, subject }).lean();
+  success(res, { topics: topics.map(t => ({ id: t._id.toString(), title: t.title, yield: t.yield, completed: t.completed })) });
+};
+
+exports.addCustomTopic = async (req, res) => {
+  const { subject } = req.params;
+  const { title } = req.body;
+  if (!title) throw ApiError.badRequest('title is required');
+  const topic = await CustomTopic.create({ userId: req.user._id, subject, title });
+  success(res, { topic: { id: topic._id.toString(), title: topic.title, yield: topic.yield, completed: topic.completed } }, 'Created', 201);
+};
+
+exports.editCustomTopic = async (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body;
+  if (!title) throw ApiError.badRequest('title is required');
+  const topic = await CustomTopic.findOneAndUpdate(
+    { _id: id, userId: req.user._id },
+    { title },
+    { new: true }
+  );
+  if (!topic) throw ApiError.notFound('Custom topic not found');
+  success(res, { topic: { id: topic._id.toString(), title: topic.title, yield: topic.yield, completed: topic.completed } });
+};
+
+exports.deleteCustomTopic = async (req, res) => {
+  const { id } = req.params;
+  await CustomTopic.findOneAndDelete({ _id: id, userId: req.user._id });
+  success(res, { deleted: true });
 };

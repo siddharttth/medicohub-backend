@@ -22,5 +22,9 @@ const optionalAuth = async (req, res, next) => {
 
 router.get('/:subject', optionalAuth, ctrl.getTopics);
 router.patch('/:topicId/complete', authenticate, ctrl.completeTopic);
+router.get('/:subject/custom', authenticate, ctrl.getCustomTopics);
+router.post('/:subject/custom', authenticate, ctrl.addCustomTopic);
+router.patch('/custom/:id', authenticate, ctrl.editCustomTopic);
+router.delete('/custom/:id', authenticate, ctrl.deleteCustomTopic);
 
 module.exports = router;
