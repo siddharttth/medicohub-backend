@@ -128,17 +128,24 @@ Rules:
   return parseJSON(res.choices[0].message.content);
 };
 
+const CHAT_SYSTEM_PROMPT = `You are MedicoAI, a helpful medical assistant for MBBS students in a batch chat.
+Answer questions clearly and concisely in plain text — no JSON, no markdown, no bullet points.
+Format every response exactly like this:
+Question - <restate the question briefly>
+Answer - <one short paragraph answer, 2-4 sentences max>
+Stay focused on medical topics. Be accurate and exam-relevant.`;
+
 // ── Drops AI chat ────────────────────────────────────────────────────────────
 const askQuestion = async (question, subject, history = []) => {
   const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: CHAT_SYSTEM_PROMPT },
     ...history.slice(-10).flatMap((h) => [
       { role: 'user', content: h.aiMessage },
       { role: 'assistant', content: h.aiResponse },
     ]),
     { role: 'user', content: subject ? `[${subject}] ${question}` : question },
   ];
-  const res = await chat(messages, 1024);
+  const res = await chat(messages, 512);
   return res.choices[0].message.content;
 };
 

@@ -72,6 +72,30 @@ const TOPICS_BY_SUBJECT = {
     { id: 'mic-9', title: 'Complement System', yield: 'medium' },
     { id: 'mic-10', title: 'Vaccine Types & Immunisation', yield: 'high' },
   ],
+  Surgery: [
+    { id: 'sur-1', title: 'Shock & Fluid Resuscitation', yield: 'high' },
+    { id: 'sur-2', title: 'Wound Healing & Surgical Infections', yield: 'high' },
+    { id: 'sur-3', title: 'Appendicitis', yield: 'high' },
+    { id: 'sur-4', title: 'Intestinal Obstruction', yield: 'high' },
+    { id: 'sur-5', title: 'Hernia Types & Management', yield: 'high' },
+    { id: 'sur-6', title: 'Thyroid & Parathyroid Surgery', yield: 'high' },
+    { id: 'sur-7', title: 'Breast Carcinoma', yield: 'high' },
+    { id: 'sur-8', title: 'Burns Management', yield: 'medium' },
+    { id: 'sur-9', title: 'Colorectal Carcinoma', yield: 'medium' },
+    { id: 'sur-10', title: 'Surgical Haemostasis & Blood Transfusion', yield: 'medium' },
+  ],
+  Medicine: [
+    { id: 'med-1', title: 'Hypertension Management', yield: 'high' },
+    { id: 'med-2', title: 'Myocardial Infarction & ACS', yield: 'high' },
+    { id: 'med-3', title: 'Diabetes Mellitus', yield: 'high' },
+    { id: 'med-4', title: 'Pulmonary Tuberculosis', yield: 'high' },
+    { id: 'med-5', title: 'Rheumatoid Arthritis', yield: 'high' },
+    { id: 'med-6', title: 'Chronic Kidney Disease', yield: 'high' },
+    { id: 'med-7', title: 'Liver Cirrhosis & Portal Hypertension', yield: 'high' },
+    { id: 'med-8', title: 'Stroke & TIA', yield: 'medium' },
+    { id: 'med-9', title: 'Pneumonia', yield: 'medium' },
+    { id: 'med-10', title: 'Thyroid Disorders', yield: 'medium' },
+  ],
 };
 
 // Default fallback for subjects not in the hardcoded list
