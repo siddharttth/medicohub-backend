@@ -31,4 +31,16 @@ const refresh = Joi.object({
   refreshToken: Joi.string().required(),
 });
 
-module.exports = { register, login, forgotPassword, resetPassword, refresh };
+const verifyOtp = Joi.object({
+  email: Joi.string().email().lowercase().trim().required(),
+  otp: Joi.string().length(6).pattern(/^\d{6}$/).required().messages({
+    'string.length': 'OTP must be 6 digits',
+    'string.pattern.base': 'OTP must be 6 digits',
+  }),
+});
+
+const resendOtp = Joi.object({
+  email: Joi.string().email().lowercase().trim().required(),
+});
+
+module.exports = { register, login, forgotPassword, resetPassword, refresh, verifyOtp, resendOtp };

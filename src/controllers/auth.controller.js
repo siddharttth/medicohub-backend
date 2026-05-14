@@ -1,10 +1,13 @@
 const User = require('../models/User');
+const PendingRegistration = require('../models/PendingRegistration');
 const { hashPassword, comparePassword } = require('../helpers/password');
 const { signAccessToken, signRefreshToken, verifyRefreshToken, generateResetToken, hashToken } = require('../helpers/token');
 const { success, created } = require('../helpers/response');
 const ApiError = require('../helpers/apiError');
 const emailService = require('../services/email.service');
 const { LOGIN_MAX_ATTEMPTS, LOGIN_LOCK_DURATION_MS, RESET_TOKEN_EXPIRY_MS } = require('../config/constants');
+
+const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
 const formatUser = (user) => ({
   id: user._id,
@@ -24,17 +27,74 @@ exports.register = async (req, res) => {
   if (exists) throw ApiError.conflict('Email already registered');
 
   const passwordHash = await hashPassword(password);
-  const user = await User.create({ email, passwordHash, name, college, year });
+  const otp = generateOtp();
+  const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+  await PendingRegistration.findOneAndUpdate(
+    { email },
+    { email, passwordHash, name, college, year, otp, otpExpiry, attempts: 0 },
+    { upsert: true, new: true }
+  );
+
+  await emailService.sendOtp(email, name, otp);
+  success(res, { email }, 'OTP sent to your email. Please verify to complete registration.');
+};
+
+exports.verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  const pending = await PendingRegistration.findOne({ email });
+  if (!pending) throw ApiError.badRequest('No pending registration. Please register again.');
+
+  if (pending.otpExpiry < new Date()) {
+    await PendingRegistration.deleteOne({ email });
+    throw ApiError.badRequest('OTP has expired. Please register again.');
+  }
+
+  if (pending.attempts >= 5) {
+    await PendingRegistration.deleteOne({ email });
+    throw ApiError.tooMany('Too many wrong attempts. Please register again.');
+  }
+
+  if (pending.otp !== otp) {
+    pending.attempts += 1;
+    await pending.save();
+    throw ApiError.badRequest(`Invalid OTP. ${5 - pending.attempts} attempts remaining.`);
+  }
+
+  const user = await User.create({
+    email: pending.email,
+    passwordHash: pending.passwordHash,
+    name: pending.name,
+    college: pending.college,
+    year: pending.year,
+  });
 
   const accessToken = signAccessToken({ userId: user._id, role: user.role });
   const refreshToken = signRefreshToken({ userId: user._id });
-
   user.refreshTokenHash = hashToken(refreshToken);
   await user.save();
 
-  await emailService.sendWelcome(user);
+  await PendingRegistration.deleteOne({ email });
+  emailService.sendWelcome(user).catch(() => {});
 
   created(res, { accessToken, refreshToken, user: formatUser(user) }, 'Registration successful');
+};
+
+exports.resendOtp = async (req, res) => {
+  const { email } = req.body;
+
+  const pending = await PendingRegistration.findOne({ email });
+  if (!pending) throw ApiError.badRequest('No pending registration. Please register again.');
+
+  const otp = generateOtp();
+  pending.otp = otp;
+  pending.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+  pending.attempts = 0;
+  await pending.save();
+
+  await emailService.sendOtp(email, pending.name, otp);
+  success(res, { email }, 'New OTP sent to your email.');
 };
 
 exports.login = async (req, res) => {

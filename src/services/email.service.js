@@ -59,6 +59,22 @@ exports.sendNoteApproved = async (user, note) => {
   );
 };
 
+exports.sendOtp = async (email, name, otp) => {
+  await send(
+    email,
+    'Your MedicoHub OTP Code',
+    `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#0a122b;color:#e1e3e4;padding:32px;border-radius:12px;">
+      <h2 style="color:#cfbcff;margin-bottom:8px;">Verify Your Email</h2>
+      <p>Hi <strong>${name}</strong>,</p>
+      <p>Use the OTP below to complete your MedicoHub registration. It expires in <strong>10 minutes</strong>.</p>
+      <div style="background:#1a2340;border:2px solid #cfbcff;border-radius:10px;padding:24px;text-align:center;margin:24px 0;">
+        <span style="font-size:40px;font-weight:bold;letter-spacing:12px;color:#cfbcff;">${otp}</span>
+      </div>
+      <p style="color:#948e9d;font-size:13px;">If you didn't request this, you can safely ignore this email.</p>
+    </div>`
+  );
+};
+
 exports.sendNoteRequest = async (user, noteRequest) => {
   await send(
     user.email,
